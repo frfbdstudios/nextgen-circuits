@@ -99,10 +99,10 @@ export default function Header() {
           </nav>
 
           {/* Header Actions */}
-          <div className="header-actions flex items-center gap-4">
+          <div className="header-actions flex items-center gap-4 ml-4">
             {/* Search Box - Desktop */}
             <form action="" onSubmit={handleSearchSubmit}>
-              <div className="search-box hidden md:flex items-center bg-gray-100 rounded-md px-3 py-2">
+              <div className="search-box hidden lg:flex items-center bg-gray-100 rounded-md px-3 py-2">
                 <input
                   type="text"
                   placeholder="Search products..."
@@ -132,11 +132,11 @@ export default function Header() {
                 </a>
               </Button>
 
-              <Button variant="ghost" size="sm" asChild>
+              {/* <Button variant="ghost" size="sm" asChild>
                 <a href="/wishlist">
                   <Heart className="w-5 h-5" />
                 </a>
-              </Button>
+              </Button> */}
             </div>
 
             {/* Mobile Menu Button */}

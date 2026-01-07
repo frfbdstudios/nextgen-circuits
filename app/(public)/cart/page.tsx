@@ -10,6 +10,10 @@ export const metadata = {
   description: 'View and manage your shopping cart',
 }
 
+// Add these exports to disable caching
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 export default async function CartPage() {
   const { items, total, originalTotal, totalSavings } = await getCartItems()
 

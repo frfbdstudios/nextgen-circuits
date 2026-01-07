@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Edit, Trash2, Eye } from "lucide-react";
 import {
   Table,
@@ -15,6 +15,7 @@ import { Product } from "../products/page";
 import { EditProductDialog } from "./edit-product-dialog";
 import { DeleteProductDialog } from "./delete-product-dialog";
 import { ViewProductDialog } from "./view-product-dialog";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 interface ProductTableProps {
   products: Product[]
@@ -26,6 +27,26 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
   const [editingProduct, setEditingProduct] = useState<Product | null>(null)
   const [deletingProduct, setDeletingProduct] = useState<Product | null>(null)
   const [viewingProduct, setViewingProduct] = useState<Product | null>(null)
+  const [categoryMap, setCategoryMap] = useState<Record<string, string>>({})
+
+  useEffect(() => {
+    async function fetchCategories() {
+      const supabase = getBrowserSupabaseClient();
+      const { data: categories } = await supabase
+        .from("categories")
+        .select("id, name");
+
+      if (categories) {
+        const map = categories.reduce((acc: { [x: string]: any; }, cat: { id: string | number; name: any; }) => {
+          acc[cat.id] = cat.name;
+          return acc;
+        }, {} as Record<string, string>);
+        setCategoryMap(map);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   const getStockColor = (stock: number) => {
     if (stock === 0) return "text-red-600"
@@ -39,11 +60,8 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
     return { label: "IN STOCK", color: "bg-green-500" }
   }
 
-  const formatCategory = (category: string) => {
-    return category
-      .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(' ')
+  const getCategoryName = (categoryId: string) => {
+    return categoryMap[categoryId] || categoryId;
   }
 
   if (loading) {
@@ -87,6 +105,7 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
             <TableBody>
               {products.map((product) => {
                 const stockStatus = getStockStatus(product.stock)
+                const categoryName = getCategoryName(product.category)
                 return (
                   <TableRow key={product.id} className="hover:bg-gray-50">
                     <TableCell className="min-w-[150px]">
@@ -94,7 +113,7 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
                         <div className="font-medium text-gray-900">{product.name}</div>
                         <div className="text-xs sm:text-sm text-gray-500">{product.sku}</div>
                         <div className="text-xs text-gray-600 mt-1 sm:hidden">
-                          {formatCategory(product.category)}
+                          {categoryName}
                         </div>
                         {/* Mobile: Show both statuses */}
                         <div className="flex gap-1 mt-1 md:hidden">
@@ -108,7 +127,7 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
                       </div>
                     </TableCell>
                     <TableCell className="text-gray-700 hidden sm:table-cell">
-                      {formatCategory(product.category)}
+                      {categoryName}
                     </TableCell>
                     <TableCell className="whitespace-nowrap">
                       <span className={`font-medium ${getStockColor(product.stock)}`}>
@@ -116,7 +135,7 @@ export function ProductTable({ products, loading, onRefresh }: ProductTableProps
                       </span>
                     </TableCell>
                     <TableCell className="font-medium text-gray-900 whitespace-nowrap">
-                      ${product.price.toFixed(2)}
+                      ৳{product.price.toFixed(2)}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <Badge className={`${stockStatus.color} text-white`}>

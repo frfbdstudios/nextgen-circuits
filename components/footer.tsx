@@ -30,10 +30,10 @@ export default function Footer() {
                 Your trusted source for electronic components in Bangladesh.
               </p>
               <div className="social-links flex space-x-4">
-                <Link href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
-                  <Facebook className="w-5 h-5" />
+                <Link href="https://www.facebook.com/NextGen.Circuits" className="text-gray-400 hover:text-blue-400 transition-colors flex items-center gap-2">
+                  <Facebook className="w-5 h-5" /> NextGen Circuits
                 </Link>
-                <Link href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
+                {/* <Link href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
                   <Twitter className="w-5 h-5" />
                 </Link>
                 <Link href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
@@ -41,7 +41,7 @@ export default function Footer() {
                 </Link>
                 <Link href="#" className="text-gray-400 hover:text-blue-400 transition-colors">
                   <Youtube className="w-5 h-5" />
-                </Link>
+                </Link> */}
               </div>
             </motion.div>
 
@@ -88,7 +88,7 @@ export default function Footer() {
             >
               <h3 className="text-lg font-semibold mb-4">Customer Service</h3>
               <ul className="footer-links space-y-2">
-                <li>
+                {/* <li>
                   <Link href="/faq" className="text-gray-300 hover:text-white transition-colors">
                     FAQ
                   </Link>
@@ -102,17 +102,17 @@ export default function Footer() {
                   <Link href="/returns" className="text-gray-300 hover:text-white transition-colors">
                     Returns & Refunds
                   </Link>
-                </li>
+                </li> */}
                 <li>
                   <Link href="/terms" className="text-gray-300 hover:text-white transition-colors">
                     Terms & Conditions
                   </Link>
                 </li>
-                <li>
+                {/* <li>
                   <Link href="/privacy" className="text-gray-300 hover:text-white transition-colors">
                     Privacy Policy
                   </Link>
-                </li>
+                </li> */}
               </ul>
             </motion.div>
 
@@ -134,11 +134,13 @@ export default function Footer() {
                 </li>
                 <li className="flex items-center space-x-3">
                   <Phone className="w-5 h-5 text-blue-400 shrink-0" />
-                  <span className="text-gray-300 text-sm">+880 1234-567890</span>
+                    <a href="tel:+8801968872878" className="text-gray-300 text-sm hover:text-white transition-colors">+880 1968-872878</a>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Mail className="w-5 h-5 text-blue-400 shrink-0" />
-                  <span className="text-gray-300 text-sm">info@nextgencircuits.com</span>
+                  <a href="mailto:nextgen.ckt@proton.me" className="text-gray-300 text-sm hover:text-white transition-colors">
+                  nextgen.ckt@proton.me
+                  </a>
                 </li>
                 <li className="flex items-center space-x-3">
                   <Clock className="w-5 h-5 text-blue-400 shrink-0" />

@@ -27,19 +27,33 @@ type Order = {
   recipient_address: string;
   payment_method: string;
   payment_status: string;
+  subtotal: number;
+  delivery_fee: number;
   total: number;
   status: string;
   pathao_consignment_id: string | null;
   created_at: string;
   item_quantity: number;
+  special_instruction: string | null;
+};
+
+type OrderItem = {
+  id: string;
+  quantity: number;
+  price: number;
+  products: {
+    name: string;
+    sku: string;
+    images: string[];
+  };
 };
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   pending: { label: "Pending", color: "bg-yellow-500" },
-  confirmed: { label: "Confirmed", color: "bg-green-500" },
-  processing: { label: "Processing", color: "bg-blue-500" },
-  shipped: { label: "Shipped", color: "bg-indigo-500" },
-  delivered: { label: "Delivered", color: "bg-green-600" },
+  confirmed: { label: "Confirmed", color: "bg-blue-500" },
+  processing: { label: "Processing", color: "bg-indigo-500" },
+  shipped: { label: "Shipped", color: "bg-purple-500" },
+  delivered: { label: "Delivered", color: "bg-green-500" },
   cancelled: { label: "Cancelled", color: "bg-red-500" },
   refunded: { label: "Refunded", color: "bg-gray-500" },
 };
@@ -54,6 +68,8 @@ export function OrdersTab() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  const [loadingItems, setLoadingItems] = useState(false);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -80,6 +96,38 @@ export function OrdersTab() {
     fetchOrders();
   }, []);
 
+  async function fetchOrderItems(orderId: string) {
+    try {
+      setLoadingItems(true);
+      const supabase = getBrowserSupabaseClient();
+      
+      const { data, error } = await supabase
+        .from("order_items")
+        .select(`
+          id,
+          quantity,
+          price,
+          products (
+            name,
+            sku,
+            images
+          )
+        `)
+        .eq("order_id", orderId);
+
+      if (error) {
+        console.error("Error fetching order items:", error);
+        throw error;
+      }
+      setOrderItems(data || []);
+    } catch (error) {
+      console.error("Error fetching order items:", error);
+      setOrderItems([]);
+    } finally {
+      setLoadingItems(false);
+    }
+  }
+
   const formatCurrency = (amount: number) => {
     return `৳${amount.toLocaleString("en-BD", { minimumFractionDigits: 2 })}`;
   };
@@ -100,9 +148,10 @@ export function OrdersTab() {
     return `https://merchant.pathao.com/tracking?consignment_id=${consignmentId}&phone=${phone}`;
   };
 
-  const openOrderDetails = (order: Order) => {
+  const openOrderDetails = async (order: Order) => {
     setSelectedOrder(order);
     setIsDialogOpen(true);
+    await fetchOrderItems(order.id);
   };
 
   if (loading) {
@@ -187,7 +236,7 @@ export function OrdersTab() {
 
       {/* Order Details Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>
               Order Details {selectedOrder && formatOrderId(selectedOrder.id)}
@@ -198,7 +247,7 @@ export function OrdersTab() {
             <div className="space-y-6">
               {/* Order Status */}
               <div>
-                <h3 className="font-semibold mb-2">Order Status</h3>
+                <h3 className="font-semibold text-lg mb-3">Order Status</h3>
                 <Badge
                   className={`${
                     statusConfig[selectedOrder.status]?.color || "bg-gray-500"
@@ -206,84 +255,151 @@ export function OrdersTab() {
                 >
                   {statusConfig[selectedOrder.status]?.label || selectedOrder.status}
                 </Badge>
+                <p className="text-xs text-gray-500 mt-2">
+                  Ordered on {formatDate(selectedOrder.created_at)}
+                </p>
               </div>
 
               {/* Tracking Link */}
               {selectedOrder.pathao_consignment_id && (
                 <div>
-                  <h3 className="font-semibold mb-2">Track Your Order</h3>
-                  <a
-                    href={getTrackingUrl(
-                      selectedOrder.pathao_consignment_id,
-                      selectedOrder.recipient_phone
+                  <h3 className="font-semibold text-lg mb-3">Track Your Order</h3>
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => window.open(
+                      getTrackingUrl(
+                        selectedOrder.pathao_consignment_id!,
+                        selectedOrder.recipient_phone
+                      ),
+                      '_blank'
                     )}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 text-[#00ccff] hover:underline"
                   >
-                    <ExternalLink className="h-4 w-4" />
+                    <ExternalLink className="h-4 w-4 mr-2" />
                     Track on Pathao
-                  </a>
-                  <p className="text-sm text-gray-600 mt-1">
+                  </Button>
+                  <p className="text-sm text-gray-600 mt-2">
                     Consignment ID: {selectedOrder.pathao_consignment_id}
                   </p>
                 </div>
               )}
 
-              {/* Recipient Details */}
+              {/* Order Items */}
               <div>
-                <h3 className="font-semibold mb-2">Recipient Details</h3>
-                <div className="space-y-1 text-sm">
+                <h3 className="font-semibold text-lg mb-3">Order Items</h3>
+                {loadingItems ? (
+                  <div className="text-center py-4 text-gray-500">Loading items...</div>
+                ) : (
+                  <div className="border rounded-lg overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow className="bg-gray-50">
+                          <TableHead>Product</TableHead>
+                          <TableHead className="text-center">Quantity</TableHead>
+                          <TableHead className="text-right">Price</TableHead>
+                          <TableHead className="text-right">Subtotal</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {orderItems.map((item) => (
+                          <TableRow key={item.id}>
+                            <TableCell>
+                              <div className="flex items-center gap-3">
+                                {item.products.images && item.products.images.length > 0 ? (
+                                  <img
+                                    src={item.products.images[0]}
+                                    alt={item.products.name}
+                                    className="w-12 h-12 object-cover rounded"
+                                  />
+                                ) : (
+                                  <div className="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                                    <span className="text-gray-400 text-xs">No image</span>
+                                  </div>
+                                )}
+                                <div>
+                                  <p className="font-medium text-sm">{item.products.name}</p>
+                                  <p className="text-xs text-gray-500">{item.products.sku}</p>
+                                </div>
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-center">{item.quantity}</TableCell>
+                            <TableCell className="text-right">{formatCurrency(item.price)}</TableCell>
+                            <TableCell className="text-right font-medium">
+                              {formatCurrency(item.price * item.quantity)}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+
+              {/* Order Summary */}
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Order Summary</h3>
+                <div className="bg-gray-50 rounded-lg p-4 space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Subtotal:</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.subtotal)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">Delivery Fee:</span>
+                    <span className="font-medium">{formatCurrency(selectedOrder.delivery_fee || 0)}</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-300">
+                    <span className="font-semibold">Total:</span>
+                    <span className="font-bold text-lg">{formatCurrency(selectedOrder.total)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Delivery Information */}
+              <div>
+                <h3 className="font-semibold text-lg mb-3">Delivery Information</h3>
+                <div className="space-y-1 text-sm bg-gray-50 rounded-lg p-4">
                   <p>
                     <span className="text-gray-600">Name:</span>{" "}
-                    {selectedOrder.recipient_name}
+                    <span className="font-medium">{selectedOrder.recipient_name}</span>
                   </p>
                   <p>
                     <span className="text-gray-600">Phone:</span>{" "}
-                    {selectedOrder.recipient_phone}
+                    <span className="font-medium">{selectedOrder.recipient_phone}</span>
                   </p>
                   <p>
                     <span className="text-gray-600">Address:</span>{" "}
-                    {selectedOrder.recipient_address}
+                    <span className="font-medium">{selectedOrder.recipient_address}</span>
                   </p>
                 </div>
               </div>
 
               {/* Payment Details */}
               <div>
-                <h3 className="font-semibold mb-2">Payment Details</h3>
-                <div className="space-y-1 text-sm">
+                <h3 className="font-semibold text-lg mb-3">Payment Details</h3>
+                <div className="space-y-1 text-sm bg-gray-50 rounded-lg p-4">
                   <p>
                     <span className="text-gray-600">Method:</span>{" "}
-                    {paymentMethodLabels[selectedOrder.payment_method] ||
-                      selectedOrder.payment_method}
+                    <span className="font-medium">
+                      {paymentMethodLabels[selectedOrder.payment_method] ||
+                        selectedOrder.payment_method}
+                    </span>
                   </p>
                   <p>
                     <span className="text-gray-600">Status:</span>{" "}
-                    <span className="capitalize">{selectedOrder.payment_status}</span>
+                    <span className="font-medium capitalize">{selectedOrder.payment_status}</span>
                   </p>
                 </div>
               </div>
 
-              {/* Order Summary */}
-              <div>
-                <h3 className="font-semibold mb-2">Order Summary</h3>
-                <div className="space-y-1 text-sm">
-                  <p>
-                    <span className="text-gray-600">Items:</span>{" "}
-                    {selectedOrder.item_quantity}
-                  </p>
-                  <p>
-                    <span className="text-gray-600">Total:</span>{" "}
-                    <span className="font-semibold">
-                      {formatCurrency(Number(selectedOrder.total))}
-                    </span>
-                  </p>
-                  <p className="text-xs text-gray-500 mt-2">
-                    Ordered on {formatDate(selectedOrder.created_at)}
+              {/* Special Instructions */}
+              {selectedOrder.special_instruction && (
+                <div>
+                  <h3 className="font-semibold text-lg mb-3">Special Instructions</h3>
+                  <p className="text-sm text-gray-700 bg-gray-50 p-3 rounded-lg">
+                    {selectedOrder.special_instruction}
                   </p>
                 </div>
-              </div>
+              )}
             </div>
           )}
         </DialogContent>

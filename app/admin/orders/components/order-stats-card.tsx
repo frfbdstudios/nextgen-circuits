@@ -3,8 +3,6 @@ import { ReactNode } from "react";
 interface OrderStatsCardProps {
   title: string;
   value: string;
-  trend: string;
-  trendPositive: boolean;
   icon: ReactNode;
   iconBg: string;
 }
@@ -12,8 +10,6 @@ interface OrderStatsCardProps {
 export function OrderStatsCard({
   title,
   value,
-  trend,
-  trendPositive,
   icon,
   iconBg,
 }: OrderStatsCardProps) {
@@ -25,9 +21,6 @@ export function OrderStatsCard({
       <div className="stat-info">
         <h3>{title}</h3>
         <p>{value}</p>
-        <span className={`trend ${trendPositive ? "positive" : "negative"}`}>
-          {trend}
-        </span>
       </div>
     </div>
   );

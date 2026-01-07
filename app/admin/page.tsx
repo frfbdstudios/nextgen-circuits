@@ -5,6 +5,7 @@ import { PopularProductsChart } from "./components/popular-products-chart";
 import { RecentOrdersTable } from "./components/recent-orders-table";
 import { RecentActivity } from "./components/recent-activity";
 import { AdminHeader } from "./components/admin-header";
+import { ProfitAnalytics } from "./components/profit-analytics";
 import { getServerSupabaseClient } from "@/lib/supabase/server";
 
 async function getDashboardMetrics() {
@@ -89,6 +90,21 @@ async function getDashboardMetrics() {
   };
 }
 
+async function checkIfAdmin() {
+  const supabase = await getServerSupabaseClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  
+  if (!user) return false
+  
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('role')
+    .eq('id', user.id)
+    .single()
+  
+  return profile?.role === 'admin'
+}
+
 function formatTrend(value: number): string {
   const arrow = value >= 0 ? "↑" : "↓";
   return `${value >= 0 ? "+" : ""}${value.toFixed(1)}% ${arrow}`;
@@ -100,6 +116,7 @@ function formatCurrency(value: number): string {
 
 export default async function AdminDashboard() {
   const metrics = await getDashboardMetrics();
+  const isAdmin = await checkIfAdmin();
 
   return (
     <>
@@ -145,6 +162,13 @@ export default async function AdminDashboard() {
             iconBg="bg-red-100"
           />
         </div>
+
+        {/* Admin-Only Profit Analytics */}
+        {isAdmin && (
+          <div className="grid grid-cols-1 gap-6">
+            <ProfitAnalytics />
+          </div>
+        )}
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

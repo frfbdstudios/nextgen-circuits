@@ -1,5 +1,5 @@
 import { getWishlistItems } from '@/lib/actions/wishlist'
-import { WishlistItem } from './components/wishlist-item'
+import { WishlistItem } from './components/wishlist-items'
 import { Button } from '@/components/ui/button'
 import { Heart } from 'lucide-react'
 import Link from 'next/link'

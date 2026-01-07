@@ -24,7 +24,9 @@ export async function addToWishlist(productId: string) {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/')
+  revalidatePath('/wishlist')
+  revalidatePath('/products')
+  revalidatePath('/', 'layout')
   return { success: true }
 }
 
@@ -47,7 +49,9 @@ export async function removeFromWishlist(productId: string) {
     return { success: false, error: error.message }
   }
 
-  revalidatePath('/')
+  revalidatePath('/wishlist')
+  revalidatePath('/products')
+  revalidatePath('/', 'layout')
   return { success: true }
 }
 
@@ -180,6 +184,8 @@ export async function moveToCart(productId: string) {
     .eq('user_id', user.id)
     .eq('product_id', productId)
 
-  revalidatePath('/')
+  revalidatePath('/wishlist')
+  revalidatePath('/cart')
+  revalidatePath('/', 'layout')
   return { success: true }
 }

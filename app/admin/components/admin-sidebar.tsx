@@ -52,6 +52,7 @@ const menuItems = [
       { title: "Landing Page", url: "/admin/landing-page", icon: PanelsTopLeft },
       // { title: "Content", url: "/admin/content", icon: FileText },
       { title: "Discounts", url: "/admin/discounts", icon: Tag },
+      { title: "Popup Banners", url: "/admin/popup-banners", icon: Megaphone },
       // { title: "Marketing", url: "/admin/marketing", icon: Megaphone },
     ],
   },

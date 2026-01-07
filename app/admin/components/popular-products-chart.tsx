@@ -26,11 +26,16 @@ type ProductData = {
   count: number;
 };
 
+type Category = {
+  id: string;
+  name: string;
+};
+
 const colors = ["#00ccff", "#00b87a", "#9333ea", "#6b7280", "#f97316"];
 
 export function PopularProductsChart() {
   const [data, setData] = useState<ProductData[]>([]);
-  const [categories, setCategories] = useState<string[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all-categories");
   const [loading, setLoading] = useState(true);
 
@@ -38,14 +43,13 @@ export function PopularProductsChart() {
     async function fetchCategories() {
       const supabase = getBrowserSupabaseClient();
       
-      const { data: products } = await supabase
-        .from("products")
-        .select("category")
-        .eq("is_active", true);
+      const { data: categoriesData } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("name");
 
-      if (products) {
-        const uniqueCategories = [...new Set((products.map((p: { category: any; }) => p.category) as string[]))];
-        setCategories(uniqueCategories);
+      if (categoriesData) {
+        setCategories(categoriesData);
       }
     }
 
@@ -57,17 +61,19 @@ export function PopularProductsChart() {
       setLoading(true);
       const supabase = getBrowserSupabaseClient();
 
-      // Fetch order items with product info
-      const { data: orderItems } = await supabase
+      // Fetch order items with product info and category
+      let query = supabase
         .from("order_items")
         .select(`
           quantity,
           product_id,
-          products (
+          products!inner (
             name,
             category
           )
         `);
+
+      const { data: orderItems } = await query;
 
       if (!orderItems) {
         setData([]);
@@ -76,20 +82,20 @@ export function PopularProductsChart() {
       }
 
       // Aggregate by product
-      const productCounts = new Map<string, { name: string; count: number; category: string }>();
+      const productCounts = new Map<string, { name: string; count: number; categoryId: string }>();
 
       orderItems.forEach((item: any) => {
         if (!item.products) return;
         
         const productName = item.products.name;
-        const category = item.products.category;
+        const categoryId = item.products.category;
 
         // Filter by category if selected
-        if (selectedCategory !== "all-categories" && category !== selectedCategory) {
+        if (selectedCategory !== "all-categories" && categoryId !== selectedCategory) {
           return;
         }
 
-        const current = productCounts.get(productName) || { name: productName, count: 0, category };
+        const current = productCounts.get(productName) || { name: productName, count: 0, categoryId };
         productCounts.set(productName, {
           ...current,
           count: current.count + (item.quantity || 1),
@@ -120,8 +126,8 @@ export function PopularProductsChart() {
           <SelectContent>
             <SelectItem value="all-categories">All Categories</SelectItem>
             {categories.map((category) => (
-              <SelectItem key={category} value={category}>
-                {category}
+              <SelectItem key={category.id} value={category.id}>
+                {category.name}
               </SelectItem>
             ))}
           </SelectContent>

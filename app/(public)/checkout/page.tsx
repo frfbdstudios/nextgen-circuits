@@ -15,8 +15,10 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
+
   useEffect(() => {
     async function loadCart() {
+
       const cart = await getCartItems()
       if (cart.items.length === 0) {
         redirect('/cart')

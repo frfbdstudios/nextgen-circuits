@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
       item_quantity: order.item_quantity,
       item_weight: parseFloat(order.item_weight.toString()),
       item_description: `Order #${order.id.slice(0, 8)} - ${order.item_quantity} items`,
-      amount_to_collect: order.payment_method === "cod" ? parseFloat(order.total.toString()) : 0,
+      amount_to_collect: order.payment_method === "cod" ? Math.round(parseFloat(order.total.toString())) : 0,
     };
 
     // Place order in Pathao

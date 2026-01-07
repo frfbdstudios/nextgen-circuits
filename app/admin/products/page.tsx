@@ -26,6 +26,8 @@ export interface Product {
   created_by: string | null
   created_at: string
   updated_at: string
+  buyingPrice?: number
+  profitMargin?: number
 }
 
 export default function ProductsPage() {
@@ -47,12 +49,34 @@ export default function ProductsPage() {
       setLoading(true)
       const { data, error } = await supabase
         .from('products')
-        .select('*')
+        .select(`
+          *,
+          product_costs (
+            buying_price,
+            effective_date
+          )
+        `)
         .order('created_at', { ascending: false })
 
       if (error) throw error
 
-      setProducts(data || [])
+      // Map products with their latest buying price
+      const productsWithCosts = (data || []).map((product: { product_costs: any[]; price: number }) => {
+        const latestCost = product.product_costs?.[0]
+        const buyingPrice = latestCost?.buying_price || 0
+        const profitMargin = buyingPrice > 0 
+          ? ((product.price - buyingPrice) / buyingPrice * 100)
+          : 0
+
+        return {
+          ...product,
+          buyingPrice,
+          profitMargin,
+          product_costs: undefined // Remove the nested object
+        }
+      })
+
+      setProducts(productsWithCosts)
     } catch (error: any) {
       console.error('Error fetching products:', error)
       toast.error('Failed to fetch products')
@@ -145,7 +169,8 @@ export default function ProductsPage() {
         }
       }
 
-      const { data, error } = await supabase
+      // Insert product (without buying price)
+      const { data: productData, error } = await supabase
         .from('products')
         .insert({
           name: product.name,
@@ -163,6 +188,7 @@ export default function ProductsPage() {
 
       if (error) {
         console.error('Supabase insert error:', error)
+        // Clean up uploaded images
         for (const url of imageUrls) {
           const path = url.split('/').slice(-2).join('/')
           await supabase.storage.from('product-images').remove([path])
@@ -170,7 +196,23 @@ export default function ProductsPage() {
         throw error
       }
 
-      toast.success(`Product "${product.name}" added successfully`)
+      // Insert buying price into product_costs table
+      const { error: costError } = await supabase
+        .from('product_costs')
+        .insert({
+          product_id: productData.id,
+          buying_price: product.buyingPrice,
+          notes: 'Initial cost',
+          created_by: session?.user?.id || user?.id,
+        })
+
+      if (costError) {
+        console.error('Error inserting product cost:', costError)
+        toast.error('Product added but failed to save buying price')
+      } else {
+        toast.success(`Product "${product.name}" added successfully`)
+      }
+
       fetchProducts()
       setIsDialogOpen(false)
 
@@ -228,7 +270,7 @@ export default function ProductsPage() {
           <ProductStatsCard
             title="Total Products"
             value={totalProducts.toString()}
-            trend="+12.5%↑"
+            // trend="+12.5%↑"
             trendPositive={true}
             icon={<ShoppingBag size={24} className="text-[#3498db]" />}
             iconBg="bg-blue-100"
@@ -236,7 +278,7 @@ export default function ProductsPage() {
           <ProductStatsCard
             title="Categories"
             value={categoriesCount.toString()}
-            trend="+2↑"
+            // trend="+2↑"
             trendPositive={true}
             icon={<Tag size={24} className="text-[#2ecc71]" />}
             iconBg="bg-green-100"
@@ -244,7 +286,7 @@ export default function ProductsPage() {
           <ProductStatsCard
             title="Low Stock Items"
             value={lowStockItems.toString()}
-            trend="+5↑"
+            // trend="+5↑"
             trendPositive={false}
             icon={<AlertTriangle size={24} className="text-[#9333ea]" />}
             iconBg="bg-purple-100"
@@ -252,7 +294,7 @@ export default function ProductsPage() {
           <ProductStatsCard
             title="Inventory Value"
             value={`৳${inventoryValue.toFixed(2)}`}
-            trend="+8.3%↑"
+            // trend="+8.3%↑"
             trendPositive={true}
             icon={<DollarSign size={24} className="text-[#e74c3c]" />}
             iconBg="bg-red-100"
@@ -264,7 +306,6 @@ export default function ProductsPage() {
           onSearchChange={setSearchQuery}
           onCategoryChange={setCategoryFilter}
           onStatusChange={setStatusFilter}
-          categories={categories}
         />
 
         {/* Product Table */}

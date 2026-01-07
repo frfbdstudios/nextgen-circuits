@@ -48,6 +48,7 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
     stock: product.stock,
     sku: product.sku,
     isActive: product.is_active,
+    buyingPrice: product.buyingPrice || 0,
   })
 
   const [existingImages, setExistingImages] = useState<string[]>(product.images || [])
@@ -66,6 +67,7 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
       stock: product.stock,
       sku: product.sku,
       isActive: product.is_active,
+      buyingPrice: product.buyingPrice || 0,
     })
     setExistingImages(product.images || [])
     setNewImageFiles([])
@@ -94,6 +96,7 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
     if (!formData.category) newErrors.category = 'Category is required'
     if (formData.stock < 0) newErrors.stock = 'Stock cannot be negative'
     if (!formData.sku.trim()) newErrors.sku = 'SKU is required'
+    if (formData.buyingPrice <= 0) newErrors.buyingPrice = 'Buying price must be greater than 0'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -173,7 +176,6 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
             throw new Error(`Failed to upload image ${i + 1}: ${uploadError.message}`)
           }
 
-          // Get public URL
           const { data: { publicUrl } } = supabase.storage
             .from('product-images')
             .getPublicUrl(filePath)
@@ -216,6 +218,23 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
         throw error
       }
 
+      // Check if buying price changed and insert new cost record
+      if (formData.buyingPrice !== product.buyingPrice) {
+        const { error: costError } = await supabase
+          .from('product_costs')
+          .insert({
+            product_id: product.id,
+            buying_price: formData.buyingPrice,
+            notes: 'Price update',
+            created_by: user?.id,
+          })
+
+        if (costError) {
+          console.error('Error updating product cost:', costError)
+          toast.error('Product updated but failed to save new buying price')
+        }
+      }
+
       toast.success('Product updated successfully')
       onSuccess()
     } catch (error: any) {
@@ -230,7 +249,7 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' || name === 'stock' ? parseFloat(value) || 0 : value
+      [name]: name === 'price' || name === 'stock' || name === 'buyingPrice' ? parseFloat(value) || 0 : value
     }))
     if (errors[name]) {
       setErrors(prev => ({ ...prev, [name]: undefined }))
@@ -310,7 +329,7 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
             {/* Price & Stock */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($) *</Label>
+                <Label htmlFor="price">Selling Price ($) *</Label>
                 <Input
                   type="number"
                   id="price"
@@ -338,6 +357,40 @@ export function EditProductDialog({ product, isOpen, onClose, onSuccess }: EditP
                   disabled={isSubmitting}
                 />
                 {errors.stock && <p className="text-red-500 text-sm">{errors.stock}</p>}
+              </div>
+            </div>
+
+            {/* Buying Price & Profit Margin */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="buyingPrice">Buying Price ($) *</Label>
+                <Input
+                  type="number"
+                  id="buyingPrice"
+                  name="buyingPrice"
+                  value={formData.buyingPrice}
+                  onChange={handleChange}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className={errors.buyingPrice ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
+                />
+                {errors.buyingPrice && <p className="text-red-500 text-sm">{errors.buyingPrice}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Profit Margin</Label>
+                <div className="h-10 px-3 py-2 border rounded-md bg-muted flex items-center justify-between">
+                  <span className="text-sm">
+                    {formData.price > 0 && formData.buyingPrice > 0
+                      ? `${(((formData.price - formData.buyingPrice) / formData.buyingPrice) * 100).toFixed(2)}%`
+                      : '0.00%'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ${(formData.price - formData.buyingPrice).toFixed(2)} profit
+                  </span>
+                </div>
               </div>
             </div>
 

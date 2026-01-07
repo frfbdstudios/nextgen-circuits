@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
-import { Home, ShoppingCart, User, Settings, Menu, X } from "lucide-react";
+import { Home, ShoppingCart, User, Menu, X, Heart } from "lucide-react";
 
 const menuItems = [
   {
@@ -20,8 +20,8 @@ const menuItems = [
     title: "MY ACCOUNT",
     items: [
       { title: "My Orders", url: "/user/orders", icon: ShoppingCart },
+      { title: "My Wishlist", url: "/user/wishlist", icon: Heart },
       { title: "My Profile", url: "/user/profile", icon: User },
-      // { title: "Settings", url: "/user/settings", icon: Settings },
     ],
   },
 ];
@@ -79,7 +79,7 @@ export function UserSidebar() {
             <h2 style={{ fontSize: "0.9rem", margin: "10px 0 0 0", opacity: 0.8 }}>User Dashboard</h2>
           </div>
         </div>
-        
+
         <nav className="sidebar-menu" style={{ padding: "20px 0", display: "flex", flexDirection: "column" }}>
           {menuItems.map((group) => (
             <div key={group.title} className="menu-section" style={{ marginBottom: "20px" }}>
@@ -89,7 +89,7 @@ export function UserSidebar() {
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.url || (item.url === "/user" && pathname === "/user");
-                
+
                 return (
                   <Link
                     key={item.title}

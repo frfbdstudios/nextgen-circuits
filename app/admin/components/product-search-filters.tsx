@@ -9,24 +9,45 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getBrowserSupabaseClient } from "@/lib/supabase/browser";
 
 interface ProductSearchFiltersProps {
   onSearchChange: (search: string) => void;
   onCategoryChange: (category: string) => void;
   onStatusChange: (status: string) => void;
-  categories: string[];
 }
+
+type Category = {
+  id: string;
+  name: string;
+};
 
 export function ProductSearchFilters({
   onSearchChange,
   onCategoryChange,
   onStatusChange,
-  categories,
 }: ProductSearchFiltersProps) {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
   const [status, setStatus] = useState("all");
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    async function fetchCategories() {
+      const supabase = getBrowserSupabaseClient();
+      const { data: categoriesData } = await supabase
+        .from("categories")
+        .select("id, name")
+        .order("name");
+
+      if (categoriesData) {
+        setCategories(categoriesData);
+      }
+    }
+
+    fetchCategories();
+  }, []);
 
   const handleSearchChange = (value: string) => {
     setSearch(value);
@@ -65,22 +86,22 @@ export function ProductSearchFilters({
             className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#3498db] focus:border-transparent text-sm sm:text-base"
           />
         </div>
-        
-        {/* <Select value={category} onValueChange={handleCategoryChange}>
+
+        <Select value={category} onValueChange={handleCategoryChange}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="All Categories" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Categories</SelectItem>
             {categories.map((cat) => (
-              <SelectItem key={cat} value={cat}>
-                {cat}
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
               </SelectItem>
             ))}
           </SelectContent>
-        </Select> */}
+        </Select>
 
-        {/* <Select value={status} onValueChange={handleStatusChange}>
+        <Select value={status} onValueChange={handleStatusChange}>
           <SelectTrigger className="w-full sm:w-[180px]">
             <SelectValue placeholder="Stock Status" />
           </SelectTrigger>
@@ -91,7 +112,7 @@ export function ProductSearchFilters({
             <SelectItem value="out-of-stock">Out of Stock</SelectItem>
             <SelectItem value="inactive">Inactive</SelectItem>
           </SelectContent>
-        </Select> */}
+        </Select>
 
         {(search || category !== "all" || status !== "all") && (
           <Button

@@ -345,7 +345,7 @@ export function CheckoutForm({ items, total, onDeliveryFeeChange }: CheckoutForm
                     <ol className="list-decimal list-inside space-y-1 text-sm">
                       <li>Open your bKash app</li>
                       <li>Go to "Send Money"</li>
-                      <li>Send ৳{finalTotal.toFixed(2)} to: <strong>01XXXXXXXXX</strong></li>
+                      <li>Send ৳{finalTotal.toFixed(2)} to: <strong>01968872878</strong></li>
                       <li>Enter your bKash account number and Transaction ID below</li>
                     </ol>
                   </div>
@@ -393,7 +393,7 @@ export function CheckoutForm({ items, total, onDeliveryFeeChange }: CheckoutForm
                     <ol className="list-decimal list-inside space-y-1 text-sm">
                       <li>Open your Nagad app</li>
                       <li>Go to "Send Money"</li>
-                      <li>Send ৳{finalTotal.toFixed(2)} to: <strong>01XXXXXXXXX</strong></li>
+                      <li>Send ৳{finalTotal.toFixed(2)} to: <strong>01968872878</strong></li>
                       <li>Enter your Nagad account number and Transaction ID below</li>
                     </ol>
                   </div>

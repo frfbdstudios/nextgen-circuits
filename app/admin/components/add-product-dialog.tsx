@@ -40,6 +40,7 @@ export interface ProductFormData {
   stock: number
   sku: string
   isActive?: boolean
+  buyingPrice: number
 }
 
 export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = false }: AddProductDialogProps) {
@@ -53,6 +54,7 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
     stock: 0,
     sku: '',
     isActive: true,
+    buyingPrice: 0,
   })
 
   const [imageFiles, setImageFiles] = useState<File[]>([])
@@ -81,6 +83,7 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
     if (!formData.category) newErrors.category = 'Category is required'
     if (formData.stock < 0) newErrors.stock = 'Stock cannot be negative'
     if (!formData.sku.trim()) newErrors.sku = 'SKU is required'
+    if (formData.buyingPrice <= 0) newErrors.buyingPrice = 'Buying price must be greater than 0'
 
     setErrors(newErrors)
     return Object.keys(newErrors).length === 0
@@ -103,6 +106,7 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
       stock: 0,
       sku: '',
       isActive: true,
+      buyingPrice: 0,
     })
     setImageFiles([])
     setImagePreviews([])
@@ -114,7 +118,7 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
-      [name]: name === 'price' || name === 'stock' ? parseFloat(value) || 0 : value
+      [name]: name === 'price' || name === 'stock' || name === 'buyingPrice' ? parseFloat(value) || 0 : value
     }))
     if (errors[name as keyof ProductFormData]) {
       setErrors(prev => ({ ...prev, [name]: undefined }))
@@ -225,10 +229,10 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
               </div>
             </div>
 
-            {/* Price & Stock */}
+            {/* Price & Buying Price */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="price">Price ($) *</Label>
+                <Label htmlFor="price">Selling Price ($) *</Label>
                 <Input
                   type="number"
                   id="price"
@@ -245,6 +249,26 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
               </div>
 
               <div className="space-y-2">
+                <Label htmlFor="buyingPrice">Buying Price ($) *</Label>
+                <Input
+                  type="number"
+                  id="buyingPrice"
+                  name="buyingPrice"
+                  value={formData.buyingPrice}
+                  onChange={handleChange}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className={errors.buyingPrice ? 'border-red-500' : ''}
+                  disabled={isSubmitting}
+                />
+                {errors.buyingPrice && <p className="text-red-500 text-sm">{errors.buyingPrice}</p>}
+              </div>
+            </div>
+
+            {/* Stock & Profit Margin */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
                 <Label htmlFor="stock">Stock Quantity *</Label>
                 <Input
                   type="number"
@@ -258,6 +282,20 @@ export function AddProductDialog({ isOpen, onClose, onSubmit, isSubmitting = fal
                   disabled={isSubmitting}
                 />
                 {errors.stock && <p className="text-red-500 text-sm">{errors.stock}</p>}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Profit Margin</Label>
+                <div className="h-10 px-3 py-2 border rounded-md bg-muted flex items-center justify-between">
+                  <span className="text-sm">
+                    {formData.price > 0 && formData.buyingPrice > 0
+                      ? `${(((formData.price - formData.buyingPrice) / formData.buyingPrice) * 100).toFixed(2)}%`
+                      : '0.00%'}
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ${(formData.price - formData.buyingPrice).toFixed(2)} profit
+                  </span>
+                </div>
               </div>
             </div>
 

@@ -6,7 +6,7 @@ import { CategoryTable } from "../components/category-table";
 import { CategorySearchBar } from "../components/category-search-bar";
 import { AdminHeader } from "../components/admin-header";
 import { CreateCategoryDialog, CategoryFormData } from "../components/create-category-dialog";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getBrowserSupabaseClient } from '@/lib/supabase/browser';
 import { useUser } from '@/hooks/use-user';
 import { isAdmin } from '@/lib/supabase/role-access-control';
@@ -24,6 +24,7 @@ export default function CategoriesPage() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState("");
   const { user } = useUser();
   const supabase = getBrowserSupabaseClient();
 
@@ -49,6 +50,18 @@ export default function CategoriesPage() {
   useEffect(() => {
     fetchCategories();
   }, []);
+
+  // Filter categories based on search query
+  const filteredCategories = useMemo(() => {
+    if (!searchQuery) return categories;
+
+    const query = searchQuery.toLowerCase();
+    return categories.filter(
+      (category) =>
+        category.name.toLowerCase().includes(query) ||
+        category.description?.toLowerCase().includes(query)
+    );
+  }, [categories, searchQuery]);
 
   const handleCreateCategory = async (categoryData: CategoryFormData) => {
     try {
@@ -157,10 +170,17 @@ export default function CategoriesPage() {
         </div>
 
         {/* Search Bar */}
-        <CategorySearchBar />
+        <CategorySearchBar 
+          onSearchChange={setSearchQuery}
+          searchValue={searchQuery}
+        />
 
         {/* Category Table */}
-        <CategoryTable categories={categories} loading={loading} onRefresh={fetchCategories} />
+        <CategoryTable 
+          categories={filteredCategories} 
+          loading={loading} 
+          onRefresh={fetchCategories} 
+        />
       </div>
 
       {/* Create Category Dialog */}
