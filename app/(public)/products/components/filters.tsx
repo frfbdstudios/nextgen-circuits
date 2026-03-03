@@ -7,9 +7,10 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet"
 import { debounce } from "@/lib/utils"
 import { getBrowserSupabaseClient } from "@/lib/supabase/browser"
-import { Loader2 } from "lucide-react"
+import { Loader2, SlidersHorizontal } from "lucide-react"
 
 interface Category {
   id: string
@@ -234,9 +235,20 @@ export default function Filters() {
   }
 
   const activeCategories = useMemo(() => params.getAll("category"), [params])
+  const [sheetOpen, setSheetOpen] = useState(false)
 
-  return (
-    <div className="space-y-2">
+  const activeFilterCount = useMemo(() => {
+    let count = 0
+    if (activeCategories.length > 0) count += activeCategories.length
+    if (params.get("stock")) count++
+    if (params.get("rating")) count++
+    if (params.get("min")) count++
+    if (params.get("max")) count++
+    return count
+  }, [activeCategories, params])
+
+  const filterContent = (
+    <div className="space-y-4">
       {/* Categories */}
       <div className="space-y-3">
         <p className="text-sm font-medium">Category</p>
@@ -247,7 +259,7 @@ export default function Filters() {
         ) : categories.length === 0 ? (
           <p className="text-sm text-gray-500">No categories available</p>
         ) : (
-          <div className="space-y-2">
+          <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
             {categories.map((cat) => {
               const checked = activeCategories.includes(cat.id)
               return (
@@ -269,69 +281,6 @@ export default function Filters() {
           </div>
         )}
       </div>
-
-      {/* Price Range */}
-      {/* <div className="space-y-2">
-        <p className="text-sm font-medium">Price Range (৳ BDT)</p>
-        <div className="grid grid-cols-2 gap-3">
-          <div>
-            <Label htmlFor="min" className="text-xs">Min</Label>
-            <Input
-              id="min"
-              type="text"
-              inputMode="numeric"
-              placeholder="Min price"
-              value={minValue}
-              onChange={handleMinChange}
-              onKeyDown={(e) => {
-                // Allow: backspace, delete, tab, escape, enter, decimal point
-                if ([46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
-                  // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                  (e.keyCode === 65 && e.ctrlKey === true) ||
-                  (e.keyCode === 67 && e.ctrlKey === true) ||
-                  (e.keyCode === 86 && e.ctrlKey === true) ||
-                  (e.keyCode === 88 && e.ctrlKey === true) ||
-                  // Allow: home, end, left, right
-                  (e.keyCode >= 35 && e.keyCode <= 39)) {
-                  return
-                }
-                // Ensure that it is a number and stop the keypress
-                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                  e.preventDefault()
-                }
-              }}
-            />
-          </div>
-          <div>
-            <Label htmlFor="max" className="text-xs">Max</Label>
-            <Input
-              id="max"
-              type="text"
-              inputMode="numeric"
-              placeholder="Max price"
-              value={maxValue}
-              onChange={handleMaxChange}
-              onKeyDown={(e) => {
-                // Allow: backspace, delete, tab, escape, enter, decimal point
-                if ([46, 8, 9, 27, 13, 110, 190].indexOf(e.keyCode) !== -1 ||
-                  // Allow: Ctrl+A, Ctrl+C, Ctrl+V, Ctrl+X
-                  (e.keyCode === 65 && e.ctrlKey === true) ||
-                  (e.keyCode === 67 && e.ctrlKey === true) ||
-                  (e.keyCode === 86 && e.ctrlKey === true) ||
-                  (e.keyCode === 88 && e.ctrlKey === true) ||
-                  // Allow: home, end, left, right
-                  (e.keyCode >= 35 && e.keyCode <= 39)) {
-                  return
-                }
-                // Ensure that it is a number and stop the keypress
-                if ((e.shiftKey || (e.keyCode < 48 || e.keyCode > 57)) && (e.keyCode < 96 || e.keyCode > 105)) {
-                  e.preventDefault()
-                }
-              }}
-            />
-          </div>
-        </div>
-      </div> */}
 
       {/* Stock Status */}
       <div className="space-y-2">
@@ -377,11 +326,48 @@ export default function Filters() {
       <Button
         variant="secondary"
         className="w-full"
-        onClick={handleReset}
+        onClick={() => {
+          handleReset()
+          setSheetOpen(false)
+        }}
       >
         Reset Filters
       </Button>
     </div>
+  )
+
+  return (
+    <>
+      {/* Mobile: Sheet trigger button */}
+      <div className="lg:hidden">
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetTrigger asChild>
+            <Button variant="outline" className="w-full flex items-center gap-2">
+              <SlidersHorizontal className="h-4 w-4" />
+              Filters
+              {activeFilterCount > 0 && (
+                <span className="ml-1 inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium h-5 w-5">
+                  {activeFilterCount}
+                </span>
+              )}
+            </Button>
+          </SheetTrigger>
+          <SheetContent side="left" className="w-80 overflow-y-auto p-5">
+            <SheetHeader>
+              <SheetTitle>Filters</SheetTitle>
+            </SheetHeader>
+            <div className="mt-4">
+              {filterContent}
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
+      {/* Desktop: Inline sidebar */}
+      <div className="hidden lg:block">
+        {filterContent}
+      </div>
+    </>
   )
 }
 

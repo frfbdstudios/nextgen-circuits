@@ -10,6 +10,7 @@ import { useRouter } from "next/navigation";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isMobileSearchOpen, setIsMobileSearchOpen] = useState(false);
   const { user } = useUser();
   const [cartCount] = useState(0);
   const pathname = usePathname();
@@ -115,6 +116,16 @@ export default function Header() {
 
             {/* User Actions */}
             <div className="user-actions flex items-center gap-2">
+              {/* Mobile Search Toggle */}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="lg:hidden"
+                onClick={() => setIsMobileSearchOpen(!isMobileSearchOpen)}
+              >
+                <Search className="w-5 h-5" />
+              </Button>
+
               <Button variant="ghost" size="sm" asChild>
                 <a href={user ? "/user" : "/login"}>
                   <User className="w-5 h-5" />
@@ -150,6 +161,32 @@ export default function Header() {
             </Button>
           </div>
         </div>
+
+        {/* Mobile Search Bar */}
+        {isMobileSearchOpen && (
+          <motion.div
+            className="lg:hidden border-t py-3"
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <form onSubmit={(e) => { handleSearchSubmit(e); setIsMobileSearchOpen(false); }}>
+              <div className="flex items-center bg-gray-100 rounded-md px-3 py-2">
+                <input
+                  type="text"
+                  placeholder="Search products..."
+                  className="bg-transparent outline-none flex-1 text-sm text-black"
+                  autoFocus
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                <button type="submit">
+                  <Search className="w-4 h-4 text-gray-500" />
+                </button>
+              </div>
+            </form>
+          </motion.div>
+        )}
 
         {/* Mobile Menu */}
         {isMenuOpen && (
@@ -224,7 +261,7 @@ export default function Header() {
             </ul>
 
             {/* Mobile Search */}
-            <form action="" onSubmit={handleSearchSubmit}>
+            {/* <form action="" onSubmit={handleSearchSubmit}>
               <div className="search-box flex items-center bg-gray-100 rounded-md px-3 py-2 mt-4">
                 <input
                   type="text"
@@ -234,7 +271,7 @@ export default function Header() {
                 />
                 <Search className="w-4 h-4 text-gray-500" />
               </div>
-            </form>
+            </form> */}
           </motion.nav>
         )}
       </div>

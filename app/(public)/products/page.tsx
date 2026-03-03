@@ -27,19 +27,10 @@ interface Product {
   is_active: boolean
 }
 
-async function getProducts(searchParams: SearchParams) {
-  const supabase = await getServerSupabaseClient()
-
-  let query = supabase
-    .from('products')
-    .select('*')
-    .eq('is_active', true)
-
-  // Search filter
-  if (searchParams.q) {
-    query = query.or(`name.ilike.%${searchParams.q}%,sku.ilike.%${searchParams.q}%,description.ilike.%${searchParams.q}%`)
-  }
-
+function applyFilters(
+  query: any,
+  searchParams: SearchParams
+) {
   // Category filter
   if (searchParams.category) {
     const categories = Array.isArray(searchParams.category)
@@ -71,7 +62,10 @@ async function getProducts(searchParams: SearchParams) {
     }
   }
 
-  // Sorting
+  return query
+}
+
+function applySorting(query: any, searchParams: SearchParams) {
   const sortBy = searchParams.sort || 'newest'
   switch (sortBy) {
     case 'price_asc':
@@ -91,6 +85,67 @@ async function getProducts(searchParams: SearchParams) {
       query = query.order('created_at', { ascending: false })
       break
   }
+  return query
+}
+
+async function getProducts(searchParams: SearchParams) {
+  const supabase = await getServerSupabaseClient()
+
+  // When there's a search query, split into two ranked groups:
+  // 1. Primary matches: name or SKU contains the query (most relevant)
+  // 2. Secondary matches: only the description contains the query
+  // Sorting is applied within each group so primary results always come first.
+  if (searchParams.q) {
+    const q = searchParams.q
+
+    // Group 1: name/SKU matches
+    let primaryQuery = supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .or(`name.ilike.%${q}%,sku.ilike.%${q}%`)
+    primaryQuery = applyFilters(primaryQuery, searchParams)
+    primaryQuery = applySorting(primaryQuery, searchParams)
+
+    // Group 2: description-only matches (exclude name/SKU matches to avoid duplicates)
+    let secondaryQuery = supabase
+      .from('products')
+      .select('*')
+      .eq('is_active', true)
+      .ilike('description', `%${q}%`)
+      .not('name', 'ilike', `%${q}%`)
+      .not('sku', 'ilike', `%${q}%`)
+    secondaryQuery = applyFilters(secondaryQuery, searchParams)
+    secondaryQuery = applySorting(secondaryQuery, searchParams)
+
+    const [primaryResult, secondaryResult] = await Promise.all([
+      primaryQuery,
+      secondaryQuery,
+    ])
+
+    if (primaryResult.error) {
+      console.error('Error fetching primary products:', primaryResult.error)
+      return []
+    }
+    if (secondaryResult.error) {
+      console.error('Error fetching secondary products:', secondaryResult.error)
+      return primaryResult.data as Product[]
+    }
+
+    return [
+      ...(primaryResult.data as Product[]),
+      ...(secondaryResult.data as Product[]),
+    ]
+  }
+
+  // No search query — single query with filters + sorting
+  let query = supabase
+    .from('products')
+    .select('*')
+    .eq('is_active', true)
+
+  query = applyFilters(query, searchParams)
+  query = applySorting(query, searchParams)
 
   const { data, error } = await query
 
@@ -133,14 +188,19 @@ export default async function ProductsPage({
               <div className="flex items-center gap-2">
                 <span className="text-sm text-gray-600 hidden sm:inline">Sort:</span>
                 <SortSelect defaultValue={params.sort || 'newest'} />
+                {/* Mobile: Filter button (rendered by Filters component as a Sheet trigger) */}
+                <div className="lg:hidden">
+                  <Filters />
+                </div>
               </div>
             </div>
           </div>
         </div>
 
         <div className="flex flex-col lg:flex-row gap-4">
-          {/* Filters Sidebar */}
-          <aside className="w-full lg:w-64 shrink-0">
+
+          {/* Desktop: Filters Sidebar */}
+          <aside className="hidden lg:block w-64 shrink-0">
             <div className="sticky top-36 bg-card rounded-lg shadow-sm p-4">
               <Filters />
             </div>
