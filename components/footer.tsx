@@ -171,7 +171,7 @@ export default function Footer() {
             </div>
             <div className="copyright">
               <p className="text-gray-400 text-sm">
-                Developed by <a href="https://chatpoka.com" target="_blank" className="hover:text-white">Chatpoka Technologies</a>
+                Developed by <a href="https://chatpoka.com" target="_blank" className="hover:text-white underline">Chatpoka Technologies</a>
               </p>
             </div>
           </div>
